@@ -67,7 +67,7 @@ def phases_permit_new_job(phases, d, sched_cfg, dir_cfg):
         curr_overrides = dir_cfg.tmp_overrides[d]
         if curr_overrides.tmpdir_max_jobs is not None:
             max_plots = curr_overrides.tmpdir_max_jobs
-    if len(phases) >= max_plots:
+    if len(phases)-(len([p for p in phases if p.in_final_phase()]) if sched_cfg.global_ignore_copying_jobs else 0) >= max_plots:
         return False
 
     return True
@@ -81,7 +81,8 @@ def maybe_start_new_plot(dir_cfg, sched_cfg, plotting_cfg):
     global_stagger = int(sched_cfg.global_stagger_m * MIN)
     if (youngest_job_age < global_stagger):
         wait_reason = 'stagger (%ds/%ds)' % (youngest_job_age, global_stagger)
-    elif len(jobs) >= sched_cfg.global_max_jobs:
+    elif len(jobs) - \
+            (len([j for j in jobs if j.phase.in_final_phase()]) if sched_cfg.global_ignore_copying_jobs else 0) >= sched_cfg.global_max_jobs:
         wait_reason = 'max jobs (%d) - (%ds/%ds)' % (sched_cfg.global_max_jobs, youngest_job_age, global_stagger)
     else:
         tmp_to_all_phases = [(d, job.job_phases_for_tmpdir(d, jobs)) for d in dir_cfg.tmp]

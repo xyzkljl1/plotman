@@ -106,6 +106,8 @@ scheduling:
 
         # Don't run more than this many jobs at a time in total.
         global_max_jobs: 12
+        #Don't count jobs in final copying phase
+        global_ignore_copying_jobs: False
 
         # Don't run any jobs (across all temp dirs) more often than this, in minutes.
         global_stagger_m: 30
