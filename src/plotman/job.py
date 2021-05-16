@@ -115,9 +115,8 @@ class Phase:
 
         return cls(major=t[0], minor=t[1])
 
-    @classmethod
-    def in_final_phase(cls):
-        return cls.major == 4 and cls.minor == 1
+    def in_final_phase(self):
+        return self.major == 4 and self.minor == 1
 
     @classmethod
     def list_from_tuples(cls, l):
