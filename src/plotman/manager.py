@@ -103,77 +103,81 @@ def maybe_start_new_plot(dir_cfg, sched_cfg, plotting_cfg):
                 dstdir = tmpdir
             else:
                 dir2ph = { d:ph for (d, ph) in dstdirs_to_youngest_phase(jobs).items()
-                        if d in dst_dir and ph is not None}
+                        if d in dst_dir and ph is not None and plot_util.is_valid_plot_dst(d, jobs)}
                 unused_dirs = [d for d in dst_dir if d not in dir2ph.keys()]
                 dstdir = ''
                 if unused_dirs:
                     dstdir = random.choice(unused_dirs)
-                else:
+                elif dir2ph:
                     dstdir = max(dir2ph, key=dir2ph.get)
-
-            logfile = os.path.join(
-                dir_cfg.log, pendulum.now().isoformat(timespec='microseconds').replace(':', '_') + '.log'
-            )
-
-            plot_args = ['chia', 'plots', 'create',
-                    '-k', str(plotting_cfg.k),
-                    '-r', str(plotting_cfg.n_threads),
-                    '-u', str(plotting_cfg.n_buckets),
-                    '-b', str(plotting_cfg.job_buffer),
-                    '-t', tmpdir,
-                    '-d', dstdir ]
-            if plotting_cfg.e:
-                plot_args.append('-e')
-            if plotting_cfg.farmer_pk is not None:
-                plot_args.append('-f')
-                plot_args.append(plotting_cfg.farmer_pk)
-            if plotting_cfg.pool_pk is not None:
-                plot_args.append('-p')
-                plot_args.append(plotting_cfg.pool_pk)
-            if dir_cfg.tmp2 is not None:
-                plot_args.append('-2')
-                plot_args.append(dir_cfg.tmp2)
-            if plotting_cfg.x:
-                plot_args.append('-x')  
-
-            logmsg = ('Starting plot job: %s ; logging to %s' % (' '.join(plot_args), logfile))
-
-            try:
-                open_log_file = open(logfile, 'x')
-            except FileExistsError:
-                # The desired log file name already exists.  Most likely another
-                # plotman process already launched a new process in response to
-                # the same scenario that triggered us.  Let's at least not
-                # confuse things further by having two plotting processes
-                # logging to the same file.  If we really should launch another
-                # plotting process, we'll get it at the next check cycle anyways.
-                message = (
-                    f'Plot log file already exists, skipping attempt to start a'
-                    f' new plot: {logfile!r}'
+                else:
+                    dstdir = None
+            if dstdir is None:
+                wait_reason = 'no eligible tempdirs (%ds/%ds)' % (youngest_job_age, global_stagger)
+            else:
+                logfile = os.path.join(
+                    dir_cfg.log, pendulum.now().isoformat(timespec='microseconds').replace(':', '_') + '.log'
                 )
-                return (False, logmsg)
-            except FileNotFoundError as e:
-                message = (
-                    f'Unable to open log file.  Verify that the directory exists'
-                    f' and has proper write permissions: {logfile!r}'
-                )
-                raise Exception(message) from e
 
-            # Preferably, do not add any code between the try block above
-            # and the with block below.  IOW, this space intentionally left
-            # blank...  As is, this provides a good chance that our handle
-            # of the log file will get closed explicitly while still
-            # allowing handling of just the log file opening error.
+                plot_args = ['chia', 'plots', 'create',
+                        '-k', str(plotting_cfg.k),
+                        '-r', str(plotting_cfg.n_threads),
+                        '-u', str(plotting_cfg.n_buckets),
+                        '-b', str(plotting_cfg.job_buffer),
+                        '-t', tmpdir,
+                        '-d', dstdir ]
+                if plotting_cfg.e:
+                    plot_args.append('-e')
+                if plotting_cfg.farmer_pk is not None:
+                    plot_args.append('-f')
+                    plot_args.append(plotting_cfg.farmer_pk)
+                if plotting_cfg.pool_pk is not None:
+                    plot_args.append('-p')
+                    plot_args.append(plotting_cfg.pool_pk)
+                if dir_cfg.tmp2 is not None:
+                    plot_args.append('-2')
+                    plot_args.append(dir_cfg.tmp2)
+                if plotting_cfg.x:
+                    plot_args.append('-x')
 
-            with open_log_file:
-                # start_new_sessions to make the job independent of this controlling tty.
-                p = subprocess.Popen(plot_args,
-                    stdout=open_log_file,
-                    stderr=subprocess.STDOUT,
-                    start_new_session=True)
+                logmsg = ('Starting plot job: %s ; logging to %s' % (' '.join(plot_args), logfile))
 
-            psutil.Process(p.pid).nice(15)
-            return (True, logmsg)
+                try:
+                    open_log_file = open(logfile, 'x')
+                except FileExistsError:
+                    # The desired log file name already exists.  Most likely another
+                    # plotman process already launched a new process in response to
+                    # the same scenario that triggered us.  Let's at least not
+                    # confuse things further by having two plotting processes
+                    # logging to the same file.  If we really should launch another
+                    # plotting process, we'll get it at the next check cycle anyways.
+                    message = (
+                        f'Plot log file already exists, skipping attempt to start a'
+                        f' new plot: {logfile!r}'
+                    )
+                    return (False, logmsg)
+                except FileNotFoundError as e:
+                    message = (
+                        f'Unable to open log file.  Verify that the directory exists'
+                        f' and has proper write permissions: {logfile!r}'
+                    )
+                    raise Exception(message) from e
+
+                # Preferably, do not add any code between the try block above
+                # and the with block below.  IOW, this space intentionally left
+                # blank...  As is, this provides a good chance that our handle
+                # of the log file will get closed explicitly while still
+                # allowing handling of just the log file opening error.
+
+                with open_log_file:
+                    # start_new_sessions to make the job independent of this controlling tty.
+                    p = subprocess.Popen(plot_args,
+                        stdout=open_log_file,
+                        stderr=subprocess.STDOUT,
+                        start_new_session=True)
+
+                psutil.Process(p.pid).nice(15)
+                return (True, logmsg)
 
     return (False, wait_reason)
 

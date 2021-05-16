@@ -4,11 +4,18 @@ import re
 import shutil
 
 GB = 1_000_000_000
+from plotman import job
 
 def df_b(d):
     'Return free space for directory (in bytes)'
     usage = shutil.disk_usage(d)
     return usage.free
+
+
+def is_valid_plot_dst(d, all_jobs):
+    space = df_b(d) - len(job.job_phases_for_dstdir(d, all_jobs)) * get_k32_plotsize()
+    return space > get_k32_plotsize()*1.01
+
 
 def get_k32_plotsize():
     return 108 * GB
