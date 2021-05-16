@@ -326,6 +326,10 @@ class Job:
                 m = re.match(r'^Compressing tables (\d) and (\d).*', line)
                 if m:
                     phase_subphases[3] = max(phase_subphases[3], int(m.group(1)))
+                    
+                m = re.match(r'Time for phase 4', line)
+                if m:
+                    phase_subphases[4] = max(phase_subphases[4], 1)
 
                 # TODO also collect timing info:
 
