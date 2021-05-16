@@ -87,7 +87,7 @@ class Directories:
 class Scheduling:
     global_max_jobs: int
     global_stagger_m: int
-    global_ignore_copying_jobs: bool = True 
+    global_ignore_copying_jobs: bool
     polling_time_s: int
     tmpdir_max_jobs: int
     tmpdir_stagger_phase_major: int
