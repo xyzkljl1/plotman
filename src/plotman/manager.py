@@ -104,7 +104,7 @@ def maybe_start_new_plot(dir_cfg, sched_cfg, plotting_cfg):
             else:
                 dir2ph = { d:ph for (d, ph) in dstdirs_to_youngest_phase(jobs).items()
                         if d in dst_dir and ph is not None and plot_util.is_valid_plot_dst(d, jobs)}
-                unused_dirs = [d for d in dst_dir if d not in dir2ph.keys()]
+                unused_dirs = [d for d in dst_dir if (d not in dir2ph.keys() )and plot_util.is_valid_plot_dst(d, jobs)]
                 dstdir = ''
                 if unused_dirs:
                     dstdir = random.choice(unused_dirs)
